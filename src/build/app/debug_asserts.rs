@@ -33,19 +33,19 @@ pub(crate) fn assert_app(app: &App) {
 
     for sc in &app.subcommands {
         if let Some(s) = sc.short_flag.as_ref() {
-            short_flags.push(Flag::App(format!("-{}", s), &sc.name));
+            short_flags.push(Flag::App(format!("{}{}", app.short_prefix, s), &sc.name));
         }
 
         for (short_alias, _) in &sc.short_flag_aliases {
-            short_flags.push(Flag::App(format!("-{}", short_alias), &sc.name));
+            short_flags.push(Flag::App(format!("{}{}", app.short_prefix, short_alias), &sc.name));
         }
 
         if let Some(l) = sc.long_flag.as_ref() {
-            long_flags.push(Flag::App(format!("--{}", l), &sc.name));
+            long_flags.push(Flag::App(format!("{}{}", app.long_prefix, l), &sc.name));
         }
 
         for (long_alias, _) in &sc.long_flag_aliases {
-            long_flags.push(Flag::App(format!("--{}", long_alias), &sc.name));
+            long_flags.push(Flag::App(format!("{}{}", app.long_prefix, long_alias), &sc.name));
         }
     }
 
@@ -53,19 +53,19 @@ pub(crate) fn assert_app(app: &App) {
         assert_arg(arg);
 
         if let Some(s) = arg.short.as_ref() {
-            short_flags.push(Flag::Arg(format!("-{}", s), &*arg.name));
+            short_flags.push(Flag::Arg(format!("{}{}", app.short_prefix, s), &*arg.name));
         }
 
         for (short_alias, _) in &arg.short_aliases {
-            short_flags.push(Flag::Arg(format!("-{}", short_alias), arg.name));
+            short_flags.push(Flag::Arg(format!("{}{}", app.short_prefix, short_alias), arg.name));
         }
 
         if let Some(l) = arg.long.as_ref() {
-            long_flags.push(Flag::Arg(format!("--{}", l), &*arg.name));
+            long_flags.push(Flag::Arg(format!("{}{}", app.long_prefix, l), &*arg.name));
         }
 
         for (long_alias, _) in &arg.aliases {
-            long_flags.push(Flag::Arg(format!("--{}", long_alias), arg.name));
+            long_flags.push(Flag::Arg(format!("{}{}", app.long_prefix, long_alias), arg.name));
         }
 
         // Name conflicts
@@ -80,8 +80,8 @@ pub(crate) fn assert_app(app: &App) {
             if let Some((first, second)) = app.two_args_of(|x| x.long == Some(l)) {
                 panic!(
                     "Long option names must be unique for each argument, \
-                        but '--{}' is in use by both '{}' and '{}'",
-                    l, first.name, second.name
+                        but '{}{}' is in use by both '{}' and '{}'",
+                    app.long_prefix, l, first.name, second.name
                 )
             }
         }
@@ -91,8 +91,8 @@ pub(crate) fn assert_app(app: &App) {
             if let Some((first, second)) = app.two_args_of(|x| x.short == Some(s)) {
                 panic!(
                     "Short option names must be unique for each argument, \
-                        but '-{}' is in use by both '{}' and '{}'",
-                    s, first.name, second.name
+                        but '{}{}' is in use by both '{}' and '{}'",
+                    app.short_prefix, s, first.name, second.name
                 )
             }
         }

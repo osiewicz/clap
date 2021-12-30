@@ -66,6 +66,8 @@ use crate::{
 pub struct App<'help> {
     pub(crate) id: Id,
     pub(crate) name: String,
+    pub(crate) short_prefix: char,
+    pub(crate) long_prefix: &'help str,
     pub(crate) long_flag: Option<&'help str>,
     pub(crate) short_flag: Option<char>,
     pub(crate) bin_name: Option<String>,
@@ -121,6 +123,8 @@ impl<'help> App<'help> {
         App {
             id: Id::from(&*name),
             name,
+            short_prefix: '-',
+            long_prefix: "--",
             ..Default::default()
         }
         .arg(
@@ -1525,7 +1529,7 @@ impl<'help> App<'help> {
     ///
     /// [`Arg::long`]: Arg::long()
     pub fn long_flag(mut self, long: &'help str) -> Self {
-        self.long_flag = Some(long.trim_start_matches(|c| c == '-'));
+        self.long_flag = Some(long.trim_start_matches(&self.long_prefix));
         self
     }
 
@@ -1576,7 +1580,7 @@ impl<'help> App<'help> {
     /// assert_eq!(m.subcommand_name(), Some("test"));
     /// ```
     pub fn short_flag_alias(mut self, name: char) -> Self {
-        assert!(!(name == '-'), "short alias name cannot be `-`");
+        assert!(!(name == self.short_prefix), "short alias name cannot be `{}`", self.short_prefix);
         self.short_flag_aliases.push((name, false));
         self
     }
@@ -1658,7 +1662,7 @@ impl<'help> App<'help> {
     /// ```
     pub fn short_flag_aliases(mut self, names: &[char]) -> Self {
         for s in names {
-            assert!(s != &'-', "short alias name cannot be `-`");
+            assert!(s != &self.short_prefix, "short alias name cannot be `{}`", self.short_prefix);
             self.short_flag_aliases.push((*s, false));
         }
         self
@@ -1743,7 +1747,7 @@ impl<'help> App<'help> {
     /// ```
     /// [`App::short_flag_alias`]: App::short_flag_alias()
     pub fn visible_short_flag_alias(mut self, name: char) -> Self {
-        assert!(name != '-', "short alias name cannot be `-`");
+        assert!(name != self.short_prefix, "short alias name cannot be `{}`", self.short_prefix);
         self.short_flag_aliases.push((name, true));
         self
     }
@@ -1821,7 +1825,7 @@ impl<'help> App<'help> {
     /// [`App::short_flag_aliases`]: App::short_flag_aliases()
     pub fn visible_short_flag_aliases(mut self, names: &[char]) -> Self {
         for s in names {
-            assert!(!(s == &'-'), "short alias name cannot be `-`");
+            assert!(!(s == &self.short_prefix), "short alias name cannot be `{}`", self.short_prefix);
             self.short_flag_aliases.push((*s, true));
         }
         self

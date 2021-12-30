@@ -1010,7 +1010,7 @@ impl Error {
         c.none("' which wasn't expected, or isn't valid in this context");
 
         if let Some((flag, subcmd)) = did_you_mean {
-            let flag = format!("--{}", flag);
+            let flag = format!("{}{}", app.long_prefix, flag);
             c.none("\n\n\tDid you mean ");
 
             if let Some(subcmd) = subcmd {
@@ -1028,7 +1028,7 @@ impl Error {
 
         // If the user wants to supply things like `--a-flag` or `-b` as a value,
         // suggest `--` for disambiguation.
-        if arg.starts_with('-') {
+        if arg.starts_with(app.short_prefix) {
             c.none(format!(
                 "\n\n\tIf you tried to supply `{}` as a value rather than a flag, use `-- {}`",
                 arg, arg
@@ -1134,7 +1134,7 @@ fn put_usage(c: &mut Colorizer, usage: impl Into<String>) {
 fn try_help(app: &App, c: &mut Colorizer) {
     if !app.settings.is_set(AppSettings::DisableHelpFlag) {
         c.none("\n\nFor more information try ");
-        c.good("--help");
+        c.good(format!("{}help", app.long_prefix));
         c.none("\n");
     } else if app.has_subcommands() && !app.settings.is_set(AppSettings::DisableHelpSubcommand) {
         c.none("\n\nFor more information try ");

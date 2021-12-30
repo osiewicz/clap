@@ -152,7 +152,7 @@ impl<'help, 'app, 'parser, 'writer> Help<'help, 'app, 'parser, 'writer> {
     fn write_args_unsorted(&mut self, args: &[&Arg<'help>]) -> io::Result<()> {
         debug!("Help::write_args_unsorted");
         // The shortest an arg can legally be is 2 (i.e. '-x')
-        let mut longest = 2;
+        let mut longest = 1;
         let mut arg_v = Vec::with_capacity(10);
 
         for arg in args
@@ -178,7 +178,7 @@ impl<'help, 'app, 'parser, 'writer> Help<'help, 'app, 'parser, 'writer> {
     fn write_args(&mut self, args: &[&Arg<'help>]) -> io::Result<()> {
         debug!("Help::write_args");
         // The shortest an arg can legally be is 2 (i.e. '-x')
-        let mut longest = 2;
+        let mut longest = 1;
         let mut ord_m = BTreeMap::new();
 
         // Determine the longest
@@ -261,7 +261,7 @@ impl<'help, 'app, 'parser, 'writer> Help<'help, 'app, 'parser, 'writer> {
         self.none(TAB)?;
 
         if let Some(s) = arg.short {
-            self.good(&format!("-{}", s))
+            self.good(&format!("{}{}", self.parser.app.short_prefix, s))
         } else if !arg.is_positional() {
             self.none(TAB)
         } else {
@@ -280,7 +280,7 @@ impl<'help, 'app, 'parser, 'writer> Help<'help, 'app, 'parser, 'writer> {
                 if arg.short.is_some() {
                     self.none(", ")?;
                 }
-                self.good(&format!("--{}", l))?
+                self.good(&format!("{}{}", self.parser.app.long_prefix, l))?
             }
 
             let sep = if arg.is_set(ArgSettings::RequireEquals) {
@@ -293,7 +293,7 @@ impl<'help, 'app, 'parser, 'writer> Help<'help, 'app, 'parser, 'writer> {
             if arg.short.is_some() {
                 self.none(", ")?;
             }
-            self.good(&format!("--{}", l))?;
+            self.good(&format!("{}{}", self.parser.app.long_prefix, l))?;
         }
         Ok(())
     }
@@ -677,7 +677,7 @@ impl<'help, 'app, 'parser, 'writer> Help<'help, 'app, 'parser, 'writer> {
 
             let mut short_als = a
                 .get_visible_short_flag_aliases()
-                .map(|a| format!("-{}", a))
+                .map(|a| format!("{}{}", self.parser.app.short_prefix, a))
                 .collect::<Vec<_>>();
 
             let als = a.get_visible_aliases().map(|s| s.to_string());
@@ -821,7 +821,7 @@ impl<'help, 'app, 'parser, 'writer> Help<'help, 'app, 'parser, 'writer> {
     fn write_subcommands(&mut self, app: &App<'help>) -> io::Result<()> {
         debug!("Help::write_subcommands");
         // The shortest an arg can legally be is 2 (i.e. '-x')
-        let mut longest = 2;
+        let mut longest = 1;
         let mut ord_m = BTreeMap::new();
         for subcommand in app
             .subcommands
@@ -835,12 +835,12 @@ impl<'help, 'app, 'parser, 'writer> Help<'help, 'app, 'parser, 'writer> {
             sc_str.push_str(
                 &subcommand
                     .short_flag
-                    .map_or(String::new(), |c| format!("-{}, ", c)),
+                    .map_or(String::new(), |c| format!("{}{}, ", app.short_prefix, c)),
             );
             sc_str.push_str(
                 &subcommand
                     .long_flag
-                    .map_or(String::new(), |c| format!("--{}, ", c)),
+                    .map_or(String::new(), |c| format!("{}{}, ", app.long_prefix, c)),
             );
             sc_str.push_str(&subcommand.name);
             longest = longest.max(display_width(&sc_str));

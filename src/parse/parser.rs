@@ -402,7 +402,7 @@ impl<'help, 'app> Parser<'help, 'app> {
                     }
                 }
 
-                if let Some(long_arg) = arg_os.strip_prefix("--") {
+                if let Some(long_arg) = arg_os.strip_prefix(self.app.long_prefix) {
                     let parse_result = self.parse_long_arg(
                         matcher,
                         long_arg,
@@ -471,7 +471,7 @@ impl<'help, 'app> Parser<'help, 'app> {
                             unreachable!()
                         }
                     }
-                } else if let Some(short_arg) = arg_os.strip_prefix("-") {
+                } else if let Some(short_arg) = arg_os.strip_prefix(self.app.short_prefix) {
                     // Arg looks like a short flag, and not a possible number
 
                     // Try to parse short args like normal, if AllowHyphenValues or
@@ -879,12 +879,12 @@ impl<'help, 'app> Parser<'help, 'app> {
             // If allow hyphen, this isn't a new arg.
             debug!("Parser::is_new_arg: Allow hyphen");
             false
-        } else if next.starts_with("--") {
+        } else if next.starts_with(self.app.long_prefix) {
             // If this is a long flag, this is a new arg.
-            debug!("Parser::is_new_arg: -- found");
+            debug!("Parser::is_new_arg: {} found", self.app.long_prefix);
             true
-        } else if next.starts_with("-") {
-            debug!("Parser::is_new_arg: - found");
+        } else if next.starts_with(self.app.short_prefix) {
+            debug!("Parser::is_new_arg: {} found", self.app.short_prefix);
             // If this is a short flag, this is a new arg. But a singe '-' by
             // itself is a value and typically means "stdin" on unix systems.
             next.raw_len() != 1
@@ -922,11 +922,11 @@ impl<'help, 'app> Parser<'help, 'app> {
             let mut sc_names = sc.name.clone();
             let mut flag_subcmd = false;
             if let Some(l) = sc.long_flag {
-                sc_names.push_str(&format!(", --{}", l));
+                sc_names.push_str(&format!(", {}{}", self.app.long_prefix, l));
                 flag_subcmd = true;
             }
             if let Some(s) = sc.short_flag {
-                sc_names.push_str(&format!(", -{}", s));
+                sc_names.push_str(&format!(", {}{}", self.app.short_prefix, s));
                 flag_subcmd = true;
             }
 
@@ -992,7 +992,7 @@ impl<'help, 'app> Parser<'help, 'app> {
     fn check_for_help_and_version_str(&self, arg: &RawOsStr) -> Option<ParseResult> {
         debug!("Parser::check_for_help_and_version_str");
         debug!(
-            "Parser::check_for_help_and_version_str: Checking if --{:?} is help or version...",
+            "Parser::check_for_help_and_version_str: Checking if {}{:?} is help or version...", self.app.long_prefix, 
             arg
         );
 
@@ -1024,7 +1024,7 @@ impl<'help, 'app> Parser<'help, 'app> {
     fn check_for_help_and_version_char(&self, arg: char) -> Option<ParseResult> {
         debug!("Parser::check_for_help_and_version_char");
         debug!(
-            "Parser::check_for_help_and_version_char: Checking if -{} is help or version...",
+            "Parser::check_for_help_and_version_char: Checking if {}{} is help or version...", self.short_prefix, 
             arg
         );
 
@@ -1270,7 +1270,7 @@ impl<'help, 'app> Parser<'help, 'app> {
                 ParseResult::FlagSubCommand(name)
             } else {
                 ParseResult::NoMatchingArg {
-                    arg: format!("-{}", c),
+                    arg: format!("{}{}", self.app.short_prefix, c),
                 }
             };
         }
@@ -1748,7 +1748,7 @@ impl<'help, 'app> Parser<'help, 'app> {
 
         ClapError::unknown_argument(
             self.app,
-            format!("--{}", arg),
+            format!("{}{}", self.app.long_prefix, arg),
             did_you_mean,
             Usage::new(self).create_usage_with_title(&*used),
         )

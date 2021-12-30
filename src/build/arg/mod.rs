@@ -100,6 +100,8 @@ pub struct Arg<'help> {
     pub(crate) index: Option<usize>,
     pub(crate) help_heading: Option<Option<&'help str>>,
     pub(crate) value_hint: ValueHint,
+    pub(crate) short_prefix: char,
+    pub(crate) long_prefix: &'help str,
 }
 
 impl<'help> Arg<'help> {
@@ -121,7 +123,7 @@ impl<'help> Arg<'help> {
     /// ```
     /// [`Arg::takes_value(true)`]: Arg::takes_value()
     pub fn new<S: Into<&'help str>>(n: S) -> Self {
-        Arg::default().name(n)
+        Arg::default().name(n).short_prefix('-').long_prefix("--")
     }
 
     /// Set the identifier used for referencing this argument in the clap API.
@@ -144,7 +146,7 @@ impl<'help> Arg<'help> {
     /// # Examples
     ///
     /// When calling `short`, use a single valid UTF-8 character which will allow using the
-    /// argument via a single hyphen (`-`) such as `-c`:
+    /// argument via a single prefix character (e.g. `-`) such as `-c`:
     ///
     /// ```rust
     /// # use clap::{App, Arg};
@@ -159,7 +161,7 @@ impl<'help> Arg<'help> {
     /// ```
     #[inline]
     pub fn short(mut self, s: char) -> Self {
-        assert!(s != '-', "short option name cannot be `-`");
+        assert!(s != self.short_prefix, "short option name cannot be `{}`", self.short_prefix);
 
         self.short = Some(s);
         self
@@ -172,15 +174,15 @@ impl<'help> Arg<'help> {
     /// own arguments, in which case `clap` simply will not assign those to the auto-generated
     /// `version` or `help` arguments.
     ///
-    /// **NOTE:** Any leading `-` characters will be stripped
+    /// **NOTE:** Leading long prefixes will be stripped.
     ///
     /// # Examples
     ///
-    /// To set `long` use a word containing valid UTF-8. If you supply a double leading
-    /// `--` such as `--config` they will be stripped. Hyphens in the middle of the word, however,
+    /// To set `long` use a word containing valid UTF-8. If you supply a leading long prefix
+    /// such as `--` they will be stripped. Occurences of a prefix in the middle of the word, however,
     /// will *not* be stripped (i.e. `config-file` is allowed).
     ///
-    /// Setting `long` allows using the argument via a double hyphen (`--`) such as `--config`
+    /// Setting `long` allows using the argument via a long prefix such as `--config`
     ///
     /// ```rust
     /// # use clap::{App, Arg};
@@ -195,7 +197,7 @@ impl<'help> Arg<'help> {
     /// ```
     #[inline]
     pub fn long(mut self, l: &'help str) -> Self {
-        self.long = Some(l.trim_start_matches(|c| c == '-'));
+        self.long = Some(l.trim_start_matches(self.long_prefix));
         self
     }
 
@@ -245,7 +247,7 @@ impl<'help> Arg<'help> {
     /// assert_eq!(m.value_of("test"), Some("cool"));
     /// ```
     pub fn short_alias(mut self, name: char) -> Self {
-        assert!(name != '-', "short alias name cannot be `-`");
+        assert!(name != self.short_prefix, "short alias name cannot be `{}`", self.short_prefix);
 
         self.short_aliases.push((name, false));
         self
@@ -298,7 +300,7 @@ impl<'help> Arg<'help> {
     /// ```
     pub fn short_aliases(mut self, names: &[char]) -> Self {
         for s in names {
-            assert!(s != &'-', "short alias name cannot be `-`");
+            assert!(*s != self.short_prefix, "short alias name cannot be `{}`", self.short_prefix);
             self.short_aliases.push((*s, false));
         }
         self
@@ -349,7 +351,7 @@ impl<'help> Arg<'help> {
     /// assert_eq!(m.value_of("test"), Some("coffee"));
     /// ```
     pub fn visible_short_alias(mut self, name: char) -> Self {
-        assert!(name != '-', "short alias name cannot be `-`");
+        assert!(name != self.short_prefix, "short alias name cannot be `{}`", self.short_prefix);
 
         self.short_aliases.push((name, true));
         self
@@ -397,7 +399,7 @@ impl<'help> Arg<'help> {
     /// ```
     pub fn visible_short_aliases(mut self, names: &[char]) -> Self {
         for n in names {
-            assert!(n != &'-', "short alias name cannot be `-`");
+            assert!(n != &self.short_prefix, "short alias name cannot be `{}`", self.short_prefix);
             self.short_aliases.push((*n, true));
         }
         self
@@ -927,6 +929,46 @@ impl<'help> Arg<'help> {
         F: Into<ArgFlags>,
     {
         self.settings.remove(setting.into());
+        self
+    }
+
+    /// Set a short prefix for the argument.
+    ///
+    /// NOTE: This function should be called before use of `short()`.
+    /// Otherwise a default value of '-' will be used.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # use clap::Arg;
+    /// Arg::new("flag")
+    ///     .short_prefix('/')
+    ///     .short('f')
+    /// # ;
+    /// ```
+    #[inline]
+    pub fn short_prefix(mut self, prefix: char) -> Self {
+        self.short_prefix = prefix;
+        self
+    }
+
+    /// Set a long prefix for the argument.
+    ///
+    /// NOTE: This function should be called before use of `long()`.
+    /// Otherwise a default value of "--" will be used.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # use clap::Arg;
+    /// Arg::new("flag")
+    ///     .long_prefix("+")
+    ///     .long("flag")
+    /// # ;
+    /// ```
+    #[inline]
+    pub fn long_prefix(mut self, prefix: &'help str) -> Self {
+        self.long_prefix = prefix;
         self
     }
 }
@@ -4911,9 +4953,9 @@ impl<'help> Display for Arg<'help> {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         // Write the name such --long or -l
         if let Some(l) = self.long {
-            write!(f, "--{}", l)?;
+            write!(f, "{}{}", self.long_prefix, l)?;
         } else if let Some(s) = self.short {
-            write!(f, "-{}", s)?;
+            write!(f, "{}{}", self.short_prefix, s)?;
         }
         if !self.is_positional() && self.is_set(ArgSettings::TakesValue) {
             let sep = if self.is_set(ArgSettings::RequireEquals) {

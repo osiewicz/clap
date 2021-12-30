@@ -1380,8 +1380,8 @@ fn args_negate_sc() {
     let app = App::new("prog")
         .version("1.0")
         .setting(AppSettings::ArgsNegateSubcommands)
-        .arg(arg!(-f --flag "testing flags"))
-        .arg(arg!(-o --opt <FILE> "tests options").required(false))
+        .arg(Arg::new("flag").short('f').long("flag").help("testing flags"))//arg!(-f --flag "testing flags"))
+        .arg(Arg::new("opt").short('o').long("opt").help("tests options").value_name("FILE"))//arg!(-o --opt <FILE> "tests options").required(false))
         .arg(Arg::new("PATH").help("help"))
         .subcommand(App::new("test"));
     assert!(utils::compare_output(
